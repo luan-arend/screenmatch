@@ -2,10 +2,13 @@ package br.com.alura.screenmatch.principal;
 
 import br.com.alura.screenmatch.model.DadosSerie;
 import br.com.alura.screenmatch.model.DadosTemporada;
+import br.com.alura.screenmatch.model.Episodio;
 import br.com.alura.screenmatch.service.ConsumoApi;
 import br.com.alura.screenmatch.service.ConverteDados;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Scanner;
 
@@ -18,7 +21,7 @@ public class Principal {
     private final String API_KEY = "&apikey=94094c90";
 
     public void exibeMenu() {
-        System.out.println("Digite o nome da série de busca:");
+        System.out.print("Digite o nome da série de busca: ");
         String nomeSerie = leitura.nextLine();
         var json = consumo.obterDados(ENDERECO + nomeSerie.replace(" ", "+") + API_KEY);
         DadosSerie dados = conversor.obterDados(json, DadosSerie.class);
@@ -32,15 +35,21 @@ public class Principal {
             DadosTemporada dadosTemporada = conversor.obterDados(json, DadosTemporada.class);
             dadosTemporadas.add(dadosTemporada);
         }
-        dadosTemporadas.forEach(System.out::println);
 
+        List<Episodio> episodios = dadosTemporadas.stream()
+                .flatMap(t -> t.episodios().stream()
+                        .map(d -> new Episodio(t.numero(),d))
+                ).toList(); // lista imutavel
 
+        System.out.print("Episodios a partir de qual ano gostaria de ver: ");
+        int dataLimite = leitura.nextInt();
+        leitura.nextLine();
+
+        LocalDate dataBusca = LocalDate.of(dataLimite,1,1);
+
+        episodios.stream()
+                .filter(e -> e.getDataLancamento() != null && e.getDataLancamento().isAfter(dataBusca))
+                .sorted(Comparator.comparing(Episodio::getDataLancamento))
+                .forEach(System.out::println);
     }
-
-//
-//        System.out.println(dados);
-//    json = consumoApi.obterDados("https://omdbapi.com/?t=gilmore+girls&season=1&episode=2&apikey=6585022c");
-//    DadosEpisodio dadosEpisodio = conversor.obterDados(json, DadosEpisodio.class);
-//        System.out.println(dadosEpisodio);
-
 }
